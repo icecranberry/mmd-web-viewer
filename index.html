@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js MMD 三渲二渲染器</title>
+  <script src="/ammo.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      overflow: hidden; 
+      background: #1a1a2e; 
+      font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    #loading {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff; display: flex;
+      flex-direction: column; justify-content: center; align-items: center;
+      z-index: 100; transition: opacity 0.5s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    #loading h2 { font-size: 24px; margin-bottom: 10px; color: #e94560; }
+    #loading p { font-size: 14px; color: #aaa; margin-bottom: 20px; }
+    .progress-bar { width: 320px; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #e94560, #ff6b81); width: 0%; transition: width 0.3s ease; }
+    
+    /* 左侧功能栏 */
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 320px;
+      height: 100vh;
+      background: rgba(10, 10, 20, 0.92);
+      backdrop-filter: blur(16px);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    #sidebar h2 {
+      color: #e94560;
+      font-size: 18px;
+      margin: 0 0 4px;
+      font-weight: 600;
+    }
+    #sidebar .subtitle {
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    
+    /* 预设选择 */
+    #preset-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .preset-radio-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .preset-radio-row:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .preset-radio-row input[type="radio"] {
+      accent-color: #e94560;
+      cursor: pointer;
+    }
+    .preset-radio-row label {
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .section-title {
+      color: #fff;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 12px;
+    }
+    
+    /* 拖拽区域 */
+    .drop-field {
+      position: relative;
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      color: #777;
+      font-size: 12px;
+      transition: all 0.25s;
+      cursor: pointer;
+      min-height: 72px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+    .drop-field .drop-clear {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      color: #888;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+      display: none;
+      z-index: 2;
+    }
+    .drop-field .drop-clear:hover {
+      color: #e94560;
+      background: rgba(255,255,255,0.1);
+    }
+    .drop-field.has-file .drop-clear {
+      display: block;
+    }
+    .drop-field:hover {
+      border-color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.03);
+    }
+    .drop-field.drag-over {
+      border-color: #e94560;
+      background: rgba(233, 69, 96, 0.1);
+      color: #fff;
+    }
+    .drop-field .drop-hint {
+      color: #aaa;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .drop-field .drop-status {
+      color: #7fff7f;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .drop-field .drop-status.empty {
+      color: #666;
+    }
+    .drop-field .compat-hint {
+      color: #e94560;
+      font-size: 11px;
+      display: none;
+    }
+    .drop-field .compat-hint.visible {
+      display: block;
+    }
+    
+    #btn-load { 
+      background: #e94560; color: #fff; border: none; 
+      padding: 12px 24px; border-radius: 10px; cursor: pointer; 
+      font-size: 15px; margin-top: 6px;
+      font-weight: 600; width: 100%;
+      transition: all 0.3s;
+    }
+    #btn-load:hover { background: #ff6b81; }
+    #btn-load:disabled { background: #444; cursor: not-allowed; }
+
+    #canvas-container {
+      margin-left: 320px;
+      margin-right: 320px;
+      width: calc(100vw - 640px);
+      height: 100vh;
+    }
+    
+    /* 右侧参数栏 */
+    #sidebar-right {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 320px;
+      height: 100vh;
+      background: rgba(10, 10, 20, 0.92);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    #sidebar-right h2 {
+      color: #e94560;
+      font-size: 18px;
+      margin: 0 0 4px;
+      font-weight: 600;
+    }
+    .param-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .param-row label {
+      color: #bbb;
+      font-size: 13px;
+      min-width: 70px;
+    }
+    .param-row input[type="range"] {
+      flex: 1;
+      accent-color: #e94560;
+    }
+    .param-row input[type="color"] {
+      flex: 1;
+      height: 28px;
+      border: none;
+      border-radius: 14px;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .param-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .param-row input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 14px;
+    }
+    .param-row .param-value {
+      color: #fff;
+      font-size: 13px;
+      min-width: 36px;
+      text-align: right;
+      font-family: monospace;
+    }
+
+    /* 墙壁控制 */
+    .wall-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .wall-toggle-row label {
+      color: #bbb;
+      font-size: 13px;
+      min-width: 70px;
+    }
+    .wall-toggle-row input[type="checkbox"] {
+      accent-color: #e94560;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .wall-sub {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding-left: 0;
+    }
+    .wall-sub.visible {
+      display: flex;
+    }
+    
+    /* PMX 单选 */
+    #pmx-selector {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #pmx-selector.visible {
+      display: flex;
+    }
+    .pmx-radio-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .pmx-radio-row:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .pmx-radio-row input[type="radio"] {
+      accent-color: #e94560;
+      cursor: pointer;
+    }
+    .pmx-radio-row label {
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    #controls {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 12px; z-index: 10;
+      background: rgba(0,0,0,0.6);
+      padding: 10px 20px; border-radius: 30px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      width: 560px;
+      max-width: 80vw;
+    }
+    #timeline-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+    #timeline-bar input[type="range"] {
+      flex: 1;
+      accent-color: #e94560;
+      cursor: pointer;
+    }
+    #timeline-bar .timeline-time {
+      color: #fff;
+      font-size: 12px;
+      font-family: monospace;
+      min-width: 100px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    button {
+      background: #e94560; color: #fff; border: none; 
+      padding: 10px 20px;
+      border-radius: 20px; cursor: pointer; 
+      font-size: 14px; transition: all 0.3s;
+      font-family: inherit;
+    }
+    button:hover { background: #ff6b81; transform: scale(1.05); }
+    button:active { transform: scale(0.95); }
+    button.secondary { background: #444; }
+    button.secondary:hover { background: #555; }
+    
+    #fps-display {
+      position: fixed; top: 20px; left: 340px;
+      color: #0f0; font-family: monospace; font-size: 14px;
+      background: rgba(0,0,0,0.5); padding: 6px 14px;
+      border-radius: 12px; backdrop-filter: blur(5px);
+      z-index: 10; pointer-events: none;
+      text-shadow: 0 0 4px #0f0;
+    }
+
+    #time-display {
+      position: fixed; top: 20px; right: 20px; color: #fff;
+      background: rgba(0,0,0,0.5); 
+      padding: 8px 16px; border-radius: 20px;
+      font-size: 14px; font-family: monospace;
+      backdrop-filter: blur(5px);
+    }
+
+    /* lil-gui */
+    .lil-gui { 
+      --background-color: rgba(0,0,0,0.7);
+      --text-color: #eee;
+      --title-background-color: rgba(0,0,0,0.8);
+      --widget-color: rgba(255,255,255,0.15);
+      --hover-color: rgba(255,255,255,0.25);
+      --focus-color: rgba(255,255,255,0.35);
+      --number-color: #2cc9ff;
+      --string-color: #a2ff00;
+    }
+
+    /* 响应式 */
+    @media (max-width: 1000px), (max-height: 1000px) {
+      #sidebar { width: 260px; padding: 16px; }
+      #sidebar-right { display: none; }
+      #canvas-container { margin-left: 260px; margin-right: 0; width: calc(100vw - 260px); }
+      #fps-display { left: 280px; }
+      #time-display { display: none !important; }
+      #controls {
+        padding: 0;
+        gap: 0;
+        z-index: 9999;
+        bottom: 20px;
+        width: 20%;
+        min-width: 100px;
+      }
+      #controls button {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 14px;
+      }
+      #timeline-bar {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <h2>正在加载 MMD 资源</h2>
+    <p id="loading-text">初始化渲染引擎...</p>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div id="fps-display">FPS: --</div>
+  <div id="time-display">00:00 / 00:00</div>
+
+  <div id="controls">
+    <div id="timeline-bar">
+      <input type="range" id="timeline" min="0" max="0" step="0.01" value="0">
+      <span class="timeline-time" id="timeline-time">00:00 / 00:00</span>
+    </div>
+    <button id="btn-toggle">▶ 播放</button>
+  </div>
+
+  <!-- 左侧功能栏 -->
+  <aside id="sidebar">
+    <h2>🎭 MMD 渲染器</h2>
+    <p class="subtitle">点击或拖拽上传</p>
+    
+    <!-- 预设 -->
+    <div class="section-title">渲染预设</div>
+    <div id="preset-list"></div>
+    
+    <!-- 模型 -->
+    <div class="section-title">模型文件夹</div>
+    <div class="drop-field" id="drop-model">
+      <span class="drop-clear" data-target="model">×</span>
+      <div class="drop-hint">📁 点击选择或拖拽文件夹</div>
+      <div class="drop-status empty" id="model-status">未选择</div>
+      <div class="compat-hint" id="drag-hint-model">Firefox 不支持拖拽文件夹，请点击选择</div>
+    </div>
+    <input type="file" id="input-model" webkitdirectory directory style="display:none">
+    
+    <!-- 动作 -->
+    <div class="section-title">动作文件</div>
+    <div class="drop-field" id="drop-motion">
+      <span class="drop-clear" data-target="motion">×</span>
+      <div class="drop-hint">🎬 点击选择或拖拽 .vmd</div>
+      <div class="drop-status empty" id="motion-name">未选择</div>
+    </div>
+    <input type="file" id="input-motion" accept=".vmd" style="display:none">
+    
+    <!-- 音乐 -->
+    <div class="section-title">音乐文件</div>
+    <div class="drop-field" id="drop-audio">
+      <span class="drop-clear" data-target="audio">×</span>
+      <div class="drop-hint">🎵 点击选择或拖拽音频</div>
+      <div class="drop-status empty" id="audio-name">未选择</div>
+    </div>
+    <input type="file" id="input-audio" accept="audio/*" style="display:none">
+    
+    <!-- 表情动作 -->
+    <div class="section-title">表情动作（可选）</div>
+    <div class="drop-field" id="drop-expression">
+      <span class="drop-clear" data-target="expression">×</span>
+      <div class="drop-hint">😊 点击选择或拖拽表情 .vmd</div>
+      <div class="drop-status empty" id="expression-name">未选择</div>
+    </div>
+    <input type="file" id="input-expression" accept=".vmd" style="display:none">
+    
+    <!-- 镜头动作 -->
+    <div class="section-title">镜头动作（可选）</div>
+    <div class="drop-field" id="drop-camera">
+      <span class="drop-clear" data-target="camera">×</span>
+      <div class="drop-hint">📷 点击选择或拖拽镜头 .vmd</div>
+      <div class="drop-status empty" id="camera-name">未选择</div>
+    </div>
+    <input type="file" id="input-camera" accept=".vmd" style="display:none">
+    
+    <!-- PMX 多选 -->
+    <div id="pmx-selector"></div>
+    
+    <button id="btn-load">▶️ 加载模型</button>
+  </aside>
+
+  <!-- 右侧参数栏 -->
+  <aside id="sidebar-right">
+    <h2>⚙️ 环境参数</h2>
+    <div class="section-title">光照</div>
+    <div class="param-row">
+      <label>环境光强度</label>
+      <input type="range" id="ambient-intensity" min="0" max="1" step="0.001">
+      <span class="param-value" id="ambient-intensity-val">0.57</span>
+    </div>
+    <div class="section-title">背景</div>
+    <div class="param-row">
+      <label>背景颜色</label>
+      <input type="color" id="bg-color" value="#5f7c9b">
+    </div>
+    <div class="section-title">墙壁</div>
+    <div class="wall-toggle-row">
+      <label>显示墙壁</label>
+      <input type="checkbox" id="wall-visible">
+    </div>
+    <div class="wall-sub" id="wall-sub">
+      <div class="param-row">
+        <label>墙壁颜色</label>
+        <input type="color" id="wall-color" value="#ffffff">
+      </div>
+      <div class="param-row">
+        <label>位置 Z</label>
+        <input type="range" id="wall-posZ" min="-30" max="0" step="0.01">
+        <span class="param-value" id="wall-posZ-val">-5.49</span>
+      </div>
+    </div>
+  </aside>
+
+  <div id="canvas-container"></div>
+  
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "threejs-mmd-toon",
+  "version": "1.0.0",
+  "description": "Three.js MMD Toon Shader Renderer",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ammo.js": "^0.0.10",
+    "lil-gui": "^0.21.0",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
