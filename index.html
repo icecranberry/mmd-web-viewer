@@ -355,6 +355,50 @@
     button:active { transform: scale(0.95); }
     button.secondary { background: #444; }
     button.secondary:hover { background: #555; }
+
+    .resource-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.25s;
+      margin-top: 8px;
+    }
+    .resource-link:hover {
+      background: rgba(233, 69, 96, 0.12);
+      border-color: rgba(233, 69, 96, 0.3);
+      transform: translateY(-1px);
+    }
+    .resource-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .resource-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
+    .resource-name {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .resource-desc {
+      color: #888;
+      font-size: 11px;
+    }
+    .resource-arrow {
+      color: #e94560;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
     
     #fps-display {
       position: fixed; top: 20px; left: 340px;
@@ -524,6 +568,18 @@
         <input type="range" id="wall-posZ" min="-30" max="0" step="0.01">
         <span class="param-value" id="wall-posZ-val">-5.49</span>
       </div>
+    </div>
+
+    <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+      <div class="section-title">资源推荐</div>
+      <a href="https://www.aplaybox.com/" target="_blank" rel="noopener noreferrer" class="resource-link">
+        <span class="resource-icon">🌐</span>
+        <span class="resource-text">
+          <span class="resource-name">模之屋 aplaybox</span>
+          <span class="resource-desc">模型 / 动作 / 场景下载</span>
+        </span>
+        <span class="resource-arrow">↗</span>
+      </a>
     </div>
   </aside>
 
