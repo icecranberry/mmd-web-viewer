@@ -44,6 +44,9 @@ let animationId;
 // 材质集合
 let skinMaterials = [];    // 皮肤材质集合
 
+// UI 隐藏状态
+let uiHidden = false;
+
 // 文件路径映射（拖拽上传时使用，因为 File.webkitRelativePath 是只读的）
 const filePathMap = new WeakMap();
 
@@ -216,11 +219,15 @@ function initScene() {
   scene = new THREE.Scene();
   applyBackground();
 
-  camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const container = document.getElementById('canvas-container');
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
   camera.position.set(0, 13, 28);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -382,11 +389,14 @@ function setupBackWall() {
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const container = document.getElementById('canvas-container');
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height);
   if (composer) {
-    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(width, height);
     if (composer.renderTarget1) composer.renderTarget1.samples = 4;
     if (composer.renderTarget2) composer.renderTarget2.samples = 4;
   }
@@ -835,6 +845,8 @@ async function loadMMD(modelFiles, motionFile, audioFile, expressionFile, camera
 // ============================================
 function setupUI() {
   const btnToggle = document.getElementById('btn-toggle');
+  const btnUiToggle = document.getElementById('btn-ui-toggle');
+  const controls = document.getElementById('controls');
 
   function updatePlayButton() {
     btnToggle.textContent = isPlaying ? '⏸ 暂停' : '▶ 播放';
@@ -878,6 +890,55 @@ function setupUI() {
     if (e.code === 'Space') {
       e.preventDefault();
       syncTogglePlay();
+    }
+  });
+
+  // UI 显隐切换
+  function updateRendererSize() {
+    const container = document.getElementById('canvas-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+    if (composer) {
+      composer.setSize(width, height);
+      if (composer.renderTarget1) composer.renderTarget1.samples = 4;
+      if (composer.renderTarget2) composer.renderTarget2.samples = 4;
+    }
+  }
+
+  function hideUI() {
+    uiHidden = true;
+    document.body.classList.add('ui-hidden');
+    btnUiToggle.textContent = '显示UI';
+    updateRendererSize();
+    const h = controls.offsetHeight;
+    controls.style.bottom = `-${h}px`;
+  }
+
+  function showUI() {
+    uiHidden = false;
+    document.body.classList.remove('ui-hidden');
+    btnUiToggle.textContent = '隐藏UI';
+    controls.style.bottom = '';
+    updateRendererSize();
+  }
+
+  btnUiToggle.addEventListener('click', () => {
+    if (uiHidden) showUI();
+    else hideUI();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!uiHidden) return;
+    const threshold = 80;
+    const nearBottom = window.innerHeight - e.clientY < threshold;
+    if (nearBottom) {
+      controls.style.bottom = '20px';
+    } else {
+      const h = controls.offsetHeight;
+      controls.style.bottom = `-${h}px`;
     }
   });
 }

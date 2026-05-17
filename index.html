@@ -185,6 +185,8 @@
       margin-right: 320px;
       width: calc(100vw - 640px);
       height: 100vh;
+      position: relative;
+      overflow: hidden;
     }
     
     /* 右侧参数栏 */
@@ -382,6 +384,33 @@
       --string-color: #a2ff00;
     }
 
+    #btn-ui-toggle {
+      padding: 10px 14px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    #controls {
+      transition: bottom 0.3s ease;
+    }
+
+    body.ui-hidden #sidebar,
+    body.ui-hidden #sidebar-right,
+    body.ui-hidden #fps-display,
+    body.ui-hidden #time-display {
+      display: none !important;
+    }
+
+    body.ui-hidden .lil-gui {
+      display: none !important;
+    }
+
+    body.ui-hidden #canvas-container {
+      margin-left: 0;
+      margin-right: 0;
+      width: 100vw;
+    }
+
     /* 响应式 */
     @media (max-width: 1000px), (max-height: 1000px) {
       #sidebar { width: 260px; padding: 16px; }
@@ -424,6 +453,7 @@
       <span class="timeline-time" id="timeline-time">00:00 / 00:00</span>
     </div>
     <button id="btn-toggle">▶ 播放</button>
+    <button id="btn-ui-toggle">隐藏UI</button>
   </div>
 
   <!-- 左侧功能栏 -->
