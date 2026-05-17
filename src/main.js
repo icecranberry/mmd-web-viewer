@@ -1645,7 +1645,6 @@ function updateBackground() {
 // ============================================
 // 动画循环
 // ============================================
-const SMALL_SCREEN_INTERVAL = 1000 / 60; // 小屏幕限制60fps
 let lastAnimateTime = 0;
 
 function seekTo(time) {
@@ -1683,15 +1682,6 @@ function seekTo(time) {
 
 function animate(timestamp) {
   animationId = requestAnimationFrame(animate);
-
-  // 小屏幕帧率限制
-  const isSmall = window.innerWidth < 1000 || window.innerHeight < 1000;
-  if (isSmall) {
-    if (!lastAnimateTime) lastAnimateTime = timestamp;
-    const elapsed = timestamp - lastAnimateTime;
-    if (elapsed < SMALL_SCREEN_INTERVAL) return;
-    lastAnimateTime = timestamp - (elapsed % SMALL_SCREEN_INTERVAL);
-  }
 
   if (isPlaying) {
     let delta = animClock.getDelta();
