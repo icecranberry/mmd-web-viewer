@@ -245,7 +245,6 @@ function initScene() {
   controls.dampingFactor = 0.05;
   controls.minDistance = 5;
   controls.maxDistance = 60;
-  controls.maxPolarAngle = Math.PI / 2 - 0.05;
 
   setupLights();
   setupGround();

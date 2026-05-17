@@ -1,0 +1,39 @@
+name: 自动打包并部署
+
+on:
+  push:
+    branches: ["main"]   # 当推送到 main 分支时触发
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write        # 允许部署到 GitHub Pages
+      id-token: write
+
+    steps:
+      - name: 1. 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 2. 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 3. 安装依赖
+        run: npm ci
+
+      - name: 4. 打包项目
+        run: npm run build
+
+      - name: 5. 部署到 GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 上传打包结果
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'    # 告诉 Actions：dist 文件夹是要部署的内容
+
+      - name: 发布到 Pages
+        uses: actions/deploy-pages@v4

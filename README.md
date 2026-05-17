@@ -10,12 +10,12 @@
 </p>
 
 <p align="center">
-  <a href=""><img src="https://img.shields.io/badge/在线演示-Live%20Demo-e94560?style=flat-square&logo=github" alt="Live Demo"></a>
-  <img src="https://img.shields.io/badge/Three.js-r160-000000?style=flat-square&logo=three.js&logoColor=white" alt="Three.js">
-  <img src="https://img.shields.io/badge/Vite-5.x-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite">
+  在线地址：<a href="https://icecranberry.github.io/mmd-web-viewer/">https://icecranberry.github.io/mmd-web-viewer/</a>
 </p>
 
 ---
+![截图](https://github.com/user-attachments/assets/6b021144-2f0d-4035-a825-9ddfd19a20d4)
+
 
 ## ✨ 功能
 
@@ -79,15 +79,19 @@ npm run build
 
 ---
 
-<h1 id="english">🎭 MMD Web Renderer</h1>
+<h1 id="english" align="center">🎭 MMD Web Renderer</h1>
 
-<p>
+<p align="center">
   A browser-based real-time MMD model renderer powered by Three.js.<br>
   No software installation required — just open the page, load your model, and play.
 </p>
 
-## Features
+<p align="center">
+  Live Url：<a href="https://icecranberry.github.io/mmd-web-viewer/">https://icecranberry.github.io/mmd-web-viewer/</a>
+</p>
 
+## Features
+![截图](https://github.com/user-attachments/assets/6b021144-2f0d-4035-a825-9ddfd19a20d4)
 - **Browser Rendering** — Run MMD directly in the browser without native software
 - **Drag & Drop Upload** — Support drag-and-drop or click-to-select for model folders, motions, audio, etc.
 - **Multi-format Support** — PMX models, VMD motions/expressions/camera, WAV/MP3 audio
